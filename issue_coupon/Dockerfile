@@ -18,6 +18,10 @@ COPY common/src /app/common/src/
 COPY redis/build.gradle /app/redis/
 COPY redis/src /app/redis/src/
 
+# user 모듈의 Gradle 파일 및 src 디렉토리 복사
+COPY user/build.gradle /app/user/
+COPY user/src /app/user/src/
+
 # coupon 모듈의 Gradle 파일 및 src 디렉토리 복사
 COPY coupon/build.gradle /app/coupon/
 COPY coupon/src /app/coupon/src/
