@@ -12,4 +12,6 @@ public interface CouponRepository {
     List<Coupon> findAll();
 
     void updateIssuedQuantity(Long id, Long issuedQuantity);
+
+    List<Coupon> findCouponsByEventId(Long eventId);
 }
