@@ -25,7 +25,7 @@ public class CouponSyncScheduler {
     @Scheduled(initialDelay = 60000, fixedDelay = 60000)
     @Transactional
     public void issuedQuantityUpdate() {
-        List<Coupon> coupons = couponService.getCoupons();
+        List<Coupon> coupons = couponService.getAllCoupons();
         for (Coupon coupon : coupons) {
             Long couponId = coupon.id();
             Long issuedCount = couponIssueRedisService.getIssuedCouponCount(couponId);
