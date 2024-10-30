@@ -32,4 +32,12 @@ public class CouponRepositoryImpl implements CouponRepository {
     public void updateIssuedQuantity(Long id, Long issuedQuantity) {
         couponJpaRepository.updateIssuedQuantity(id, issuedQuantity);
     }
+
+    @Override
+    public List<Coupon> findCouponsByEventId(Long eventId) {
+        return couponJpaRepository.findCouponsByEventId(eventId)
+                .stream()
+                .map(CouponEntity::toModel)
+                .toList();
+    }
 }
