@@ -20,6 +20,7 @@ repositories {
 dependencies {
     implementation project(':common')
     implementation project(':redis')
+    implementation project(':user')
     implementation project(':coupon')
     implementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
