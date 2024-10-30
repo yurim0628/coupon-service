@@ -17,7 +17,9 @@ public enum ErrorCode {
 
     COUPON_ISSUE_QUANTITY_EXCEEDED(BAD_REQUEST, "쿠폰 발급 수량이 초과되었습니다."),
     COUPON_ALREADY_ISSUED_BY_USER(BAD_REQUEST, "사용자가 이미 이 쿠폰을 발급받았습니다."),
-    COUPON_NOT_FOUND(NOT_FOUND, "쿠폰을 찾을 수 없습니다.");
+    COUPON_NOT_FOUND(NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
+
+    EMAIL_ALREADY_EXISTS(CONFLICT, "이미 사용 중인 이메일 입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
