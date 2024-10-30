@@ -36,6 +36,19 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
 
+  user-module:
+    image: user-image
+    container_name: user-module-container
+    ports:
+      - "8084:8080"
+    depends_on:
+      - mysql
+      - common-module
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-container:3306/sparta
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234!!
+
   coupon-module:
     image: coupon-image
     container_name: coupon-module-container
