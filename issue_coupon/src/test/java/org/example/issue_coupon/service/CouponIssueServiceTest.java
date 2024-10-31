@@ -2,9 +2,7 @@ package org.example.issue_coupon.service;
 
 import org.example.coupon.domain.Coupon;
 import org.example.coupon.service.CouponService;
-import org.example.issue_coupon.domain.CouponIssue;
 import org.example.issue_coupon.domain.CouponIssueCreate;
-import org.example.issue_coupon.service.port.CouponIssueRepository;
 import org.example.redis.domain.CouponRedis;
 import org.example.redis.service.CouponIssueRedisService;
 import org.example.redis.service.CouponRedisService;
@@ -15,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -41,7 +40,7 @@ public class CouponIssueServiceTest {
     private CouponIssueRedisService couponIssueCacheService;
 
     @Mock
-    private CouponIssueRepository couponIssueRepository;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     private CouponIssueCreate couponIssueRequest;
     private Long couponId;
@@ -70,7 +69,7 @@ public class CouponIssueServiceTest {
         // then
         verify(couponCacheService).getCoupon(couponId);
         verify(couponIssueCacheService).checkCouponIssueQuantityAndDuplicate(cachedCoupon, userId.toString());
-        verify(couponIssueRepository).save(any(CouponIssue.class));
+        verify(kafkaTemplate).send(eq("topic"), any(CouponIssueCreate.class));
     }
 
     @Test
@@ -99,6 +98,6 @@ public class CouponIssueServiceTest {
         // then
         verify(couponCacheService).setCoupon(eq(couponId), any(CouponRedis.class));
         verify(couponService).getCoupon(couponId);
-        verify(couponIssueRepository).save(any(CouponIssue.class));
+        verify(kafkaTemplate).send(eq("topic"), any(CouponIssueCreate.class));
     }
 }
