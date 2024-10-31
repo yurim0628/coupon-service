@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.coupon.domain.Coupon;
 import org.example.coupon.service.CouponService;
-import org.example.issue_coupon.domain.CouponIssue;
 import org.example.issue_coupon.domain.CouponIssueCreate;
-import org.example.issue_coupon.service.port.CouponIssueRepository;
 import org.example.redis.domain.CouponRedis;
 import org.example.redis.service.CouponIssueRedisService;
 import org.example.redis.service.CouponRedisService;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -20,7 +19,8 @@ public class CouponIssueService {
     private final CouponService couponService;
     private final CouponRedisService couponCacheService;
     private final CouponIssueRedisService couponIssueCacheService;
-    private final CouponIssueRepository couponIssueRepository;
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void issueCoupon(CouponIssueCreate couponIssueRequest) {
         Long couponId = couponIssueRequest.couponId();
@@ -30,7 +30,7 @@ public class CouponIssueService {
 
         CouponRedis cachedCoupon = getCachedOrDbCoupon(couponId);
         validateCouponIssue(cachedCoupon, userId);
-        saveCouponIssue(couponIssueRequest);
+        kafkaTemplate.send("topic",  couponIssueRequest);
 
         log.info("Coupon Issued Successfully. Coupon ID: [{}], User ID: [{}]", couponId, userId);
     }
@@ -52,10 +52,5 @@ public class CouponIssueService {
 
     private void validateCouponIssue(CouponRedis cachedCoupon, String userId) {
         couponIssueCacheService.checkCouponIssueQuantityAndDuplicate(cachedCoupon, userId);
-    }
-
-    private void saveCouponIssue(CouponIssueCreate couponIssueRequest) {
-        CouponIssue couponIssue = CouponIssue.from(couponIssueRequest);
-        couponIssueRepository.save(couponIssue);
     }
 }
