@@ -2,55 +2,72 @@ package org.example.issue_coupon.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.coupon.domain.Coupon;
-import org.example.coupon.service.CouponService;
+import org.example.common.exception.CommonException;
+import org.example.issue_coupon.domain.Coupon;
 import org.example.issue_coupon.domain.CouponIssueCreate;
-import org.example.redis.domain.CouponRedis;
-import org.example.redis.service.CouponIssueRedisService;
-import org.example.redis.service.CouponRedisService;
+import org.example.issue_coupon.domain.CouponRedis;
+import org.example.issue_coupon.domain.CouponRedisRequest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+
+import static org.example.common.exception.ErrorCode.COUPON_NOT_FOUND;
+import static org.example.issue_coupon.utils.RequestUrlUtils.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CouponIssueService {
 
-    private final CouponService couponService;
-    private final CouponRedisService couponCacheService;
-    private final CouponIssueRedisService couponIssueCacheService;
-
+    private final RestApiService restApiService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void issueCoupon(CouponIssueCreate couponIssueRequest) {
         Long couponId = couponIssueRequest.couponId();
         String userId = String.valueOf(couponIssueRequest.userId());
+        log.info("Issuing Coupon. " +
+                "Coupon ID: [{}], User ID: [{}]", couponId, userId);
 
-        log.info("Issuing Coupon. Coupon ID: [{}], User ID: [{}]", couponId, userId);
-
-        CouponRedis cachedCoupon = getCachedOrDbCoupon(couponId);
-        validateCouponIssue(cachedCoupon, userId);
-        kafkaTemplate.send("topic",  couponIssueRequest);
-
-        log.info("Coupon Issued Successfully. Coupon ID: [{}], User ID: [{}]", couponId, userId);
+        validateCouponIssue(getCachedCoupon(couponId), userId);
+        kafkaTemplate.send("topic", couponIssueRequest);
+        log.info("Coupon Issued Successfully. " +
+                "Coupon ID: [{}], User ID: [{}]", couponId, userId);
     }
 
-    private CouponRedis getCachedOrDbCoupon(Long couponId) {
-        return couponCacheService.getCoupon(couponId)
-                .orElseGet(() -> {
-                    log.info("Coupon Not Found in Cache. Fetching from Database. Coupon ID: [{}]", couponId);
-                    Coupon couponFromDb = couponService.getCoupon(couponId);
-                    CouponRedis couponRedis = CouponRedis.builder()
-                            .id(couponFromDb.id())
-                            .maxQuantity(couponFromDb.maxQuantity())
-                            .eventId(couponFromDb.eventId())
-                            .build();
-                    couponCacheService.setCoupon(couponId, couponRedis);
-                    return couponRedis;
-                });
+    private CouponRedis getCachedCoupon(Long couponId) {
+        return restApiService.getCouponFromRedis(
+                buildUriWithPathVariable(REDIS_COUPONS_ENDPOINT, couponId),
+                CouponRedis.class
+        ).orElseGet(() -> fetchCouponFromDbAndCache(couponId));
+    }
+
+    private CouponRedis fetchCouponFromDbAndCache(Long couponId) {
+        log.info("Cache Miss for Coupon. Fetching from DB. " +
+                "Coupon ID: [{}]", couponId);
+
+        Coupon couponFromDb = restApiService.getCouponFromDb(
+                buildUriWithPathVariable(EVENTS_COUPONS_ENDPOINT, couponId),
+                Coupon.class
+        ).orElseThrow(() -> new CommonException(COUPON_NOT_FOUND));
+
+        CouponRedis couponRedis = CouponRedis.from(couponFromDb);
+        cacheCoupon(couponRedis);
+
+        return couponRedis;
+    }
+
+    private void cacheCoupon(CouponRedis couponRedis) {
+        restApiService.saveCouponToRedis(
+                buildUri(REDIS_COUPONS_ENDPOINT),
+                couponRedis,
+                CouponRedis.class
+        );
     }
 
     private void validateCouponIssue(CouponRedis cachedCoupon, String userId) {
-        couponIssueCacheService.checkCouponIssueQuantityAndDuplicate(cachedCoupon, userId);
+        restApiService.validateCouponIssueInRedis(
+                buildUri(REDIS_COUPONS_ISSUES_VALIDATE_ENDPOINT),
+                CouponRedisRequest.from(cachedCoupon, userId),
+                CouponRedisRequest.class
+        );
     }
 }
