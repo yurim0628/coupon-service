@@ -3,7 +3,7 @@ package org.example.redis.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.exception.CommonException;
-import org.example.redis.domain.CouponRedis;
+import org.example.redis.domain.CouponRedisRequest;
 import org.example.redis.service.port.CouponIssueCache;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataAccessException;
@@ -24,21 +24,21 @@ public class CouponIssueRedisService {
     private final CouponIssueCache couponIssueCache;
     private final RedisService redisService;
 
-    public void checkCouponIssueQuantityAndDuplicate(CouponRedis coupon, String userId) {
+    public void checkCouponIssueQuantityAndDuplicate(CouponRedisRequest couponRedisRequest) {
         redisService.execute(new SessionCallback<>() {
             @Override
             public <K, V> Object execute(@NotNull RedisOperations<K, V> operations) throws DataAccessException {
                 operations.multi();
 
-                Long couponId = coupon.id();
-                Long maxQuantity = coupon.maxQuantity();
-                log.info("Checking Coupon Issue Quantity and Duplicate For Coupon ID: [{}], User ID: [{}]", couponId, userId);
+                Long couponId = couponRedisRequest.couponId();
+                Long maxQuantity = couponRedisRequest.maxQuantity();
+                log.info("Checking Coupon Issue Quantity and Duplicate For Coupon ID: [{}], User ID: [{}]", couponId, couponRedisRequest.userId());
 
                 String couponIssueRequestKey = getCouponIssueRequestKey(couponId);
                 if (!isTotalIssueQuantityAvailable(couponIssueRequestKey, maxQuantity)) {
                     throw new CommonException(COUPON_ISSUE_QUANTITY_EXCEEDED);
                 }
-                if (isUserAlreadyIssuedCoupon(couponIssueRequestKey, userId)) {
+                if (isUserAlreadyIssuedCoupon(couponIssueRequestKey, couponRedisRequest.userId())) {
                     throw new CommonException(COUPON_ALREADY_ISSUED_BY_USER);
                 }
 
