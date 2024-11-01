@@ -23,12 +23,14 @@ public class CouponIssueEntity {
     @Enumerated(STRING)
     private CouponStatus status;
     private Long couponId;
+    private Long userId;
 
     public static CouponIssueEntity fromModel(CouponIssue couponIssue) {
         CouponIssueEntity couponIssueEntity = new CouponIssueEntity();
         couponIssueEntity.id = couponIssue.getId();
         couponIssueEntity.status = couponIssue.getCouponStatus();
         couponIssueEntity.couponId = couponIssue.getCouponId();
+        couponIssueEntity.userId = couponIssue.getUserId();
         return couponIssueEntity;
     }
 
