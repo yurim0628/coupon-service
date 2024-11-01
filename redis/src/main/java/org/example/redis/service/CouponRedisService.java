@@ -3,6 +3,7 @@ package org.example.redis.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.redis.domain.CouponRedis;
+import org.example.redis.domain.CouponRedisCreate;
 import org.example.redis.service.port.CouponCache;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +24,10 @@ public class CouponRedisService {
         return couponCache.getCoupon(couponKey);
     }
 
-    public void setCoupon(Long couponId, CouponRedis couponRedis) {
+    public void setCoupon(CouponRedisCreate couponRedisCreate) {
+        Long couponId = couponRedisCreate.id();
         String couponKey = getCouponKey(couponId);
         log.info("Setting Coupon with Coupon ID: [{}], Key: [{}]", couponId, couponKey);
-        couponCache.setCoupon(couponKey, couponRedis);
+        couponCache.setCoupon(couponKey, CouponRedis.of(couponRedisCreate));
     }
 }
